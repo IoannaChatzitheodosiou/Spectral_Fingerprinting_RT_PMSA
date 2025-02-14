@@ -11,3 +11,6 @@ if __name__ == "__main__":
         well = WellTimeSeries.WellTimeSeries(f'./{well}')
         well.plot_heatmaps()
         well.make_gif()
+
+
+###script that executes everything, use to run all the data
