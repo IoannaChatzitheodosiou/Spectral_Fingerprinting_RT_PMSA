@@ -11,7 +11,7 @@ class WellTimeSeries:
     '''
     This class reads the timeseries for a well and creates a 3D diagram
     '''
-    def __init__(self, init_folder): 
+    def __init__(self, init_folder: str, remove_outliars: function) -> None: 
         '''
         init_folder: the folder that contains the metadata yaml file and the csv file of each reading
         '''
@@ -25,43 +25,14 @@ class WellTimeSeries:
         #creates a dictionary containing a dataframe with the CSV file data for each timestamp
         for timestamp, file  in self.config_data["series"].items():
             df = pd.read_csv(f'{init_folder}/{file}', header=0, index_col=0)
-            df = self.remove_outliers_corner(df)
+            df = remove_outliars(df)
             max = df.values.max()
             if max > self.max:
                 self.max=max
             self.readings[timestamp]= EmissionExcitationReading(df)
         self.plotted_heatmaps = []
         self._euclidean_distances_over_timeseries = self.euclidean_distance_between_timepoints()
-
-    #this function doesn't run, it is just left in the code in case it is needed in the future
-    def remove_outliers_z(self, df) -> pd.DataFrame:
-        flat_values = df.values.flatten()
-        # Calculate the overall mean and standard deviation
-        mean = np.mean(flat_values)
-        std_dev = np.std(flat_values)
-        # Calculate Z-scores for all values in the DataFrame
-        z_scores = (df - mean) / std_dev
-        # Set a threshold for Z-scores (e.g., 3)
-        threshold = 3
-        # Create a mask for values within the threshold
-        mask = np.abs(z_scores) < threshold
-        # Apply the mask to keep only values within the threshold
-        df_no_outliers = df[mask]
-        return df_no_outliers
-    
-    def remove_outliers_corner(self, df) -> pd.DataFrame:
-        df.iloc[42,0] = 0
-        df.iloc[43,0] = 0
-        df.iloc[43,1] = 0
-        df.iloc[43,2] = 0
-        df.iloc[44,0] = 0
-        df.iloc[44,1] = 0
-        df.iloc[44,2] = 0
-        df.iloc[45,0] = 0
-        df.iloc[45,1] = 0
-        df.iloc[45,2] = 0
-        df.iloc[45,3] = 0
-        return df
+        self._eem_feature = self.calculate_eem_features()
 
     def plot_reading_heatmap(self) -> None:
         for timestamp, measurment in self.readings.items():
@@ -83,7 +54,7 @@ class WellTimeSeries:
         plt.savefig('euclidean_distance_over_time',dpi=400)
         plt.close()        
     
-    def export_eem_features(self) -> None:
+    def calculate_eem_features(self) -> None:
         for timestamp, measurment in self.readings.items():
             well_name = self.config_data["well_name"]
             features = {"rms" : float(measurment.get_rms()),
