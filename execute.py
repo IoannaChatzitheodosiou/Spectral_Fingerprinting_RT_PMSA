@@ -13,3 +13,4 @@ if __name__ == "__main__":
         well.plot_reading_heatmap()
         well.make_gif()
         well.plot_euclidean_heatmap()
+        well.plot_features_scatter_plot()

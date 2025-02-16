@@ -31,8 +31,8 @@ class WellTimeSeries:
                 self.max=max
             self.readings[timestamp]= EmissionExcitationReading(df)
         self.plotted_heatmaps = []
-        self._euclidean_distances_over_timeseries = self.euclidean_distance_between_timepoints()
-        self._eem_feature = self.calculate_eem_features()
+        self._euclidean_distances_over_timeseries: pd.DataFrame = self.euclidean_distance_between_timepoints()
+        self._eem_features: pd.DataFrame = self.calculate_eem_features()
 
     def plot_reading_heatmap(self) -> None:
         for timestamp, measurment in self.readings.items():
@@ -52,16 +52,23 @@ class WellTimeSeries:
     def plot_euclidean_heatmap(self) -> None:
         sns.heatmap(self._euclidean_distances_over_timeseries, cmap="icefire")
         plt.savefig('euclidean_distance_over_time',dpi=400)
-        plt.close()        
+        plt.close()
+
+    def plot_features_scatter_plot(self)-> None:
+        sns.scatterplot(data=self._eem_features, x="peak_shape", y="rms")
+        plt.savefig('eem_features_over_time',dpi=400)
+        plt.close() 
     
-    def calculate_eem_features(self) -> None:
+    def calculate_eem_features(self) -> pd.DataFrame:
+        features_table = pd.DataFrame()
         for timestamp, measurment in self.readings.items():
             well_name = self.config_data["well_name"]
             features = {"rms" : float(measurment.get_rms()),
                         "peak_shape": float(measurment.get_peak_shape())}
+            features_table = pd.concat([features_table, pd.DataFrame([features], index=[timestamp])])
             with open(f'{well_name}_eem_features.yml', 'w') as f:
                 yaml.safe_dump(features, f)
-
+        return features_table
 
     def make_gif(self) -> None:
         # Load images
@@ -80,8 +87,7 @@ class WellTimeSeries:
             euclidean_distance = {}
             for timestamp2, read2 in self.readings.items():
                 euclidean_distance[timestamp2] = read.get_euclidean_distance(read2)
-            distance_frame = pd.DataFrame([euclidean_distance], index=[timestamp])
-            distances_table = pd.concat([distances_table, distance_frame])
+            distances_table = pd.concat([distances_table, pd.DataFrame([euclidean_distance], index=[timestamp])])
         return distances_table
 
 class EmissionExcitationReading:
