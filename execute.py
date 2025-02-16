@@ -10,7 +10,8 @@ if __name__ == "__main__":
         total_wells = yaml.safe_load(file)
     for well in total_wells:        
         well = WellTimeSeries.WellTimeSeries(f'./{well}', OutliarRemovalStrategy.remove_outliers_corner)
-        well.plot_reading_heatmap()
-        well.make_gif()
-        well.plot_euclidean_heatmap()
-        well.plot_eem_features()
+        well_plotter = WellTimeSeries.WellTimeSeriesPlotter(well)
+        well_plotter.plot_reading_heatmap()
+        well_plotter.make_gif()
+        well_plotter.plot_euclidean_heatmap()
+        well_plotter.plot_eem_features()

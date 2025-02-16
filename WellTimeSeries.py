@@ -8,35 +8,14 @@ import seaborn as sns
 from PIL import Image
 
 class WellTimeSeriesPlotter:
-    def __init__(self, ) -> None:
-        pass
-
-class WellTimeSeries:
-    '''
-    This class reads the timeseries for a well and creates a 3D diagram
-    '''
-    def __init__(self, init_folder: str, remove_outliars: function) -> None: 
-        '''
-        init_folder: the folder that contains the metadata yaml file and the csv file of each reading
-        '''
-        #loads the metadata file
-        self.init_folder = init_folder
-        with open(f'{init_folder}/metadata.yaml', 'r') as file:
-            self.config_data = yaml.safe_load(file) 
-        self.readings = {}
-        self.max = 0
-        max = 0
-        #creates a dictionary containing a dataframe with the CSV file data for each timestamp
-        for timestamp, file  in self.config_data["series"].items():
-            df = pd.read_csv(f'{init_folder}/{file}', header=0, index_col=0)
-            df = remove_outliars(df)
-            max = df.values.max()
-            if max > self.max:
-                self.max=max
-            self.readings[timestamp]= EmissionExcitationReading(df)
+    def __init__(self, well_time_series: WellTimeSeries) -> None:
+        self.readings = well_time_series.readings
+        self._euclidean_distances_over_timeseries = well_time_series._euclidean_distances_over_timeseries
+        self._eem_features = well_time_series._eem_features
+        self.config_data =  well_time_series.config_data
         self.plotted_heatmaps = []
-        self._euclidean_distances_over_timeseries: pd.DataFrame = self.euclidean_distance_between_timepoints()
-        self._eem_features: pd.DataFrame = self.calculate_eem_features()
+        self.max = well_time_series.max
+        self.init_folder = well_time_series.init_folder
 
     def plot_reading_heatmap(self) -> None:
         for timestamp, measurment in self.readings.items():
@@ -64,23 +43,11 @@ class WellTimeSeries:
         for index in self._eem_features.index:
             plt.text(self._eem_features['rms'][index], self._eem_features['peak_shape'][index], 
                      index, fontsize=12, ha='right', va='bottom')
-
         plt.xlabel("X-axis")
         plt.ylabel("Y-axis")
         plt.title("Scatter Plot with Index Labels")
         plt.savefig('eem_features_over_time',dpi=400)
         plt.close()
-    
-    def calculate_eem_features(self) -> pd.DataFrame:
-        features_table = pd.DataFrame()
-        for timestamp, measurment in self.readings.items():
-            well_name = self.config_data["well_name"]
-            features = {"rms" : float(measurment.get_rms()),
-                        "peak_shape": float(measurment.get_peak_shape())}
-            features_table = pd.concat([features_table, pd.DataFrame([features], index=[timestamp])])
-            with open(f'{well_name}_eem_features.yml', 'w') as f:
-                yaml.safe_dump(features, f)
-        return features_table
 
     def make_gif(self) -> None:
         # Load images
@@ -93,6 +60,45 @@ class WellTimeSeries:
             duration=400,  # Duration between frames in milliseconds
             loop=0  # Loop forever
             )
+
+class WellTimeSeries:
+    '''
+    This class reads the timeseries for a well and creates a 3D diagram
+    '''
+    def __init__(self, init_folder: str, remove_outliars: function) -> None: 
+        '''
+        init_folder: the folder that contains the metadata yaml file and the csv file of each reading
+        '''
+        #loads the metadata file
+        self.init_folder = init_folder
+        with open(f'{init_folder}/metadata.yaml', 'r') as file:
+            self.config_data = yaml.safe_load(file) 
+        self.readings = {}
+        self.max = 0
+        max = 0
+        #creates a dictionary containing a dataframe with the CSV file data for each timestamp
+        for timestamp, file  in self.config_data["series"].items():
+            df = pd.read_csv(f'{init_folder}/{file}', header=0, index_col=0)
+            df = remove_outliars(df)
+            max = df.values.max()
+            if max > self.max:
+                self.max=max
+            self.readings[timestamp]= EmissionExcitationReading(df)
+        self.plotted_heatmaps = []
+        self._euclidean_distances_over_timeseries: pd.DataFrame = self.euclidean_distance_between_timepoints()
+        self._eem_features: pd.DataFrame = self.calculate_eem_features()
+    
+    def calculate_eem_features(self) -> pd.DataFrame:
+        features_table = pd.DataFrame()
+        for timestamp, measurment in self.readings.items():
+            well_name = self.config_data["well_name"]
+            features = {"rms" : float(measurment.get_rms()),
+                        "peak_shape": float(measurment.get_peak_shape())}
+            features_table = pd.concat([features_table, pd.DataFrame([features], index=[timestamp])])
+            with open(f'{well_name}_eem_features.yml', 'w') as f:
+                yaml.safe_dump(features, f)
+        return features_table
+
     def euclidean_distance_between_timepoints(self) -> pd.DataFrame:
         distances_table = pd.DataFrame()
         for timestamp, read in self.readings.items():
