@@ -7,6 +7,10 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 from PIL import Image
 
+class WellTimeSeriesPlotter:
+    def __init__(self, ) -> None:
+        pass
+
 class WellTimeSeries:
     '''
     This class reads the timeseries for a well and creates a 3D diagram
@@ -54,10 +58,18 @@ class WellTimeSeries:
         plt.savefig('euclidean_distance_over_time',dpi=400)
         plt.close()
 
-    def plot_features_scatter_plot(self)-> None:
-        sns.scatterplot(data=self._eem_features, x="peak_shape", y="rms")
+    def plot_eem_features(self)-> None:
+        plt.figure(figsize=(8, 5))
+        plt.scatter(self._eem_features['rms'], self._eem_features['peak_shape'], color='blue')
+        for index in self._eem_features.index:
+            plt.text(self._eem_features['rms'][index], self._eem_features['peak_shape'][index], 
+                     index, fontsize=12, ha='right', va='bottom')
+
+        plt.xlabel("X-axis")
+        plt.ylabel("Y-axis")
+        plt.title("Scatter Plot with Index Labels")
         plt.savefig('eem_features_over_time',dpi=400)
-        plt.close() 
+        plt.close()
     
     def calculate_eem_features(self) -> pd.DataFrame:
         features_table = pd.DataFrame()
