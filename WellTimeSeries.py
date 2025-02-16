@@ -31,9 +31,10 @@ class WellTimeSeries:
                 self.max=max
             self.readings[timestamp]= EmissionExcitationReading(df)
         self.plotted_heatmaps = []
+        self._euclidean_distances_over_timeseries = self.euclidean_distance_between_timepoints()
 
     #this function doesn't run, it is just left in the code in case it is needed in the future
-    def remove_outliers_z(self, df):
+    def remove_outliers_z(self, df) -> pd.DataFrame:
         flat_values = df.values.flatten()
         # Calculate the overall mean and standard deviation
         mean = np.mean(flat_values)
@@ -48,7 +49,7 @@ class WellTimeSeries:
         df_no_outliers = df[mask]
         return df_no_outliers
     
-    def remove_outliers_corner(self, df):
+    def remove_outliers_corner(self, df) -> pd.DataFrame:
         df.iloc[42,0] = 0
         df.iloc[43,0] = 0
         df.iloc[43,1] = 0
@@ -62,8 +63,7 @@ class WellTimeSeries:
         df.iloc[45,3] = 0
         return df
 
-
-    def plot_heatmaps(self):
+    def plot_reading_heatmap(self) -> None:
         for timestamp, measurment in self.readings.items():
             well_name = self.config_data["well_name"]
             ax=plt.axes()
@@ -77,6 +77,11 @@ class WellTimeSeries:
             self.plotted_heatmaps.append(heatmap_path)
             plt.savefig(heatmap_path,dpi=400)
             plt.close()
+
+    def plot_euclidean_heatmap(self) -> None:
+        sns.heatmap(self._euclidean_distances_over_timeseries, cmap="icefire")
+        plt.savefig('euclidean_distance_over_time',dpi=400)
+        plt.close()        
     
     def export_eem_features(self) -> None:
         for timestamp, measurment in self.readings.items():
@@ -87,7 +92,7 @@ class WellTimeSeries:
                 yaml.safe_dump(features, f)
 
 
-    def make_gif(self):
+    def make_gif(self) -> None:
         # Load images
         images = [Image.open(f'{img}.png') for img in self.plotted_heatmaps]
         gif_path = self.init_folder +'timeseries.gif'
@@ -98,6 +103,15 @@ class WellTimeSeries:
             duration=400,  # Duration between frames in milliseconds
             loop=0  # Loop forever
             )
+    def euclidean_distance_between_timepoints(self) -> pd.DataFrame:
+        distances_table = pd.DataFrame()
+        for timestamp, read in self.readings.items():
+            euclidean_distance = {}
+            for timestamp2, read2 in self.readings.items():
+                euclidean_distance[timestamp2] = read.get_euclidean_distance(read2)
+            distance_frame = pd.DataFrame([euclidean_distance], index=[timestamp])
+            distances_table = pd.concat([distances_table, distance_frame])
+        return distances_table
 
 class EmissionExcitationReading:
     def __init__(self, df: pd.DataFrame) -> None:

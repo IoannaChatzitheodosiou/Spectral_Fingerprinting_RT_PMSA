@@ -9,6 +9,7 @@ if __name__ == "__main__":
         total_wells = yaml.safe_load(file)
     for well in total_wells:        
         well = WellTimeSeries.WellTimeSeries(f'./{well}')
-        well.plot_heatmaps()
+        well.plot_reading_heatmap()
         well.make_gif()
         well.export_eem_features()
+        well.plot_euclidean_heatmap()
