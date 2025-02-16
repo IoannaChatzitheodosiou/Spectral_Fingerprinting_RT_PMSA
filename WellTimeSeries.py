@@ -95,7 +95,7 @@ class WellTimeSeries:
             features = {"rms" : float(measurment.get_rms()),
                         "peak_shape": float(measurment.get_peak_shape())}
             features_table = pd.concat([features_table, pd.DataFrame([features], index=[timestamp])])
-            with open(f'{well_name}_eem_features.yml', 'w') as f:
+            with open(f'{well_name}_{timestamp}_eem_features.yml', 'w') as f:
                 yaml.safe_dump(features, f)
         return features_table
 
@@ -112,7 +112,7 @@ class EmissionExcitationReading:
     def __init__(self, df: pd.DataFrame) -> None:
         self._data: pd.DataFrame = df
         self._data_normalised: pd.DataFrame = df/df.max()
-        self._peak_limit_normalised = 0.8 
+        self._peak_limit_normalised: float = 0.8 
     
     def get_data(self) -> pd.DataFrame:
         return self._data
