@@ -1,16 +1,14 @@
-import ReadFiles
+import TeCanSparkData
 import WellTimeSeries
 import yaml
 
 if __name__ == "__main__":
     filename = input("Please enter the data path: ")
-    ReadFiles.extract_data(filename)
+    TeCanSparkData.extract_data(filename)
     with open('well_names.yaml', 'r') as file:
         total_wells = yaml.safe_load(file)
     for well in total_wells:        
         well = WellTimeSeries.WellTimeSeries(f'./{well}')
         well.plot_heatmaps()
         well.make_gif()
-
-
-###script that executes everything, use to run all the data
+        well.export_eem_features()
