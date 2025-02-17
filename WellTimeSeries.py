@@ -33,12 +33,14 @@ class WellTimeSeriesPlotter:
             plt.close()
 
     def plot_euclidean_heatmap(self) -> None:
+        well_name = self.config_data["well_name"]
         sns.heatmap(self._euclidean_distances_over_timeseries, cmap="icefire")
-        plt.savefig('euclidean_distance_over_time',dpi=400)
+        plt.savefig(f'euclidean_distance_over_time_{well_name}',dpi=400)
         plt.close()
 
     def plot_eem_features(self)-> None:
         plt.figure(figsize=(8, 5))
+        well_name = self.config_data["well_name"]
         plt.scatter(self._eem_features['rms'], self._eem_features['peak_shape'], color='blue')
         for index in self._eem_features.index:
             plt.text(self._eem_features['rms'][index], self._eem_features['peak_shape'][index], 
@@ -46,7 +48,7 @@ class WellTimeSeriesPlotter:
         plt.xlabel("X-axis")
         plt.ylabel("Y-axis")
         plt.title("Scatter Plot with Index Labels")
-        plt.savefig('eem_features_over_time',dpi=400)
+        plt.savefig(f'eem_features_over_time_{well_name}',dpi=400)
         plt.close()
 
     def make_gif(self) -> None:
