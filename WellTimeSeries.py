@@ -34,7 +34,7 @@ class WellTimeSeriesPlotter:
 
     def plot_euclidean_heatmap(self) -> None:
         well_name = self.config_data["well_name"]
-        sns.heatmap(self._euclidean_distances_over_timeseries, cmap="icefire")
+        sns.heatmap(np.log(self._euclidean_distances_over_timeseries), cmap="icefire", vmin=1)
         plt.savefig(f'euclidean_distance_over_time_{well_name}',dpi=400)
         plt.close()
 
