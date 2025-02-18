@@ -9,6 +9,7 @@ from PIL import Image
 
 class WellTimeSeriesPlotter:
     def __init__(self, well_time_series: WellTimeSeries) -> None:
+        self._well_time_series = well_time_series
         self.readings = well_time_series.readings
         self._euclidean_distances_over_timeseries = well_time_series._euclidean_distances_over_timeseries
         self._eem_features = well_time_series._eem_features
@@ -18,10 +19,10 @@ class WellTimeSeriesPlotter:
         self.init_folder = well_time_series.init_folder
 
     def plot_reading_heatmap(self) -> None:
-        for timestamp, measurment in self.readings.items():
+        for timestamp, measurement in self.readings.items():
             well_name = self.config_data["well_name"]
             ax=plt.axes()
-            sns.heatmap(measurment.get_data(), cmap="icefire", ax=ax, vmax=self.max)
+            sns.heatmap(measurement.get_data(), cmap="icefire", ax=ax, vmax=self.max)
             #sns.heatmap(df, cmap="icefire",  ax=ax, vmax=1000)
             ax.set_title(f'Measurement {timestamp}')
             # Adjust the x and y ticks to make them less dense
@@ -31,6 +32,12 @@ class WellTimeSeriesPlotter:
             self.plotted_heatmaps.append(heatmap_path)
             plt.savefig(heatmap_path,dpi=400)
             plt.close()
+
+    def plot_max(self) -> None:
+        well_name = self.config_data["well_name"]
+        sns.lineplot(data = self._well_time_series.get_max_table())
+        plt.savefig(f'max_table{well_name}',dpi=400)
+        plt.close()
 
     def plot_euclidean_heatmap(self) -> None:
         well_name = self.config_data["well_name"]
@@ -92,14 +99,21 @@ class WellTimeSeries:
     
     def calculate_eem_features(self) -> pd.DataFrame:
         features_table = pd.DataFrame()
-        for timestamp, measurment in self.readings.items():
+        for timestamp, measurement in self.readings.items():
             well_name = self.config_data["well_name"]
-            features = {"rms" : float(measurment.get_rms()),
-                        "peak_shape": float(measurment.get_peak_shape())}
+            features = {"rms" : float(measurement.get_rms()),
+                        "peak_shape": float(measurement.get_peak_shape())}
             features_table = pd.concat([features_table, pd.DataFrame([features], index=[timestamp])])
             with open(f'{well_name}_{timestamp}_eem_features.yml', 'w') as f:
                 yaml.safe_dump(features, f)
         return features_table
+
+    def get_max_table(self) -> pd.DataFrame:
+        max_fl_table = pd.DataFrame()
+        for timestamp, measurement in self.readings.items():
+            max_value = float(measurement.get_data_max())
+            max_fl_table = pd.concat([max_fl_table, pd.DataFrame([max_value], index=[timestamp])])
+        return max_fl_table
 
     def euclidean_distance_between_timepoints(self) -> pd.DataFrame:
         distances_table = pd.DataFrame()
@@ -113,7 +127,8 @@ class WellTimeSeries:
 class EmissionExcitationReading:
     def __init__(self, df: pd.DataFrame) -> None:
         self._data: pd.DataFrame = df
-        self._data_normalised: pd.DataFrame = df/df.max()
+        self._max = np.max(df.to_numpy())
+        self._data_normalised: pd.DataFrame = df/self._max
         self._peak_limit_normalised: float = 0.8 
     
     def get_data(self) -> pd.DataFrame:
@@ -122,6 +137,10 @@ class EmissionExcitationReading:
     def get_data_normalised(self) -> pd.DataFrame:
         return self._data_normalised
     
+    def get_data_max(self)-> float:
+        return self._max
+
+
     def get_rms(self) -> float:
         data = self._data_normalised.to_numpy()
         return np.sqrt(np.mean(data**2))

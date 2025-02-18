@@ -15,3 +15,4 @@ if __name__ == "__main__":
         well_plotter.make_gif()
         well_plotter.plot_euclidean_heatmap()
         well_plotter.plot_eem_features()
+        well_plotter.plot_max()
