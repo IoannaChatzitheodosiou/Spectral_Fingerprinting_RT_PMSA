@@ -17,15 +17,19 @@ def remove_outliers_z(df) -> pd.DataFrame:
     return df_no_outliers
 
 def remove_outliers_corner(df) -> pd.DataFrame:
+    df.iloc[41,0] = 0
     df.iloc[42,0] = 0
+    df.iloc[42,1] = 0
     df.iloc[43,0] = 0
     df.iloc[43,1] = 0
     df.iloc[43,2] = 0
     df.iloc[44,0] = 0
     df.iloc[44,1] = 0
     df.iloc[44,2] = 0
+    df.iloc[44,3] = 0
     df.iloc[45,0] = 0
     df.iloc[45,1] = 0
     df.iloc[45,2] = 0
     df.iloc[45,3] = 0
+    df.iloc[45,4] = 0
     return df

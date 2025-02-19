@@ -21,8 +21,9 @@ class WellTimeSeriesPlotter:
     def plot_reading_heatmap(self) -> None:
         for timestamp, measurement in self.readings.items():
             well_name = self.config_data["well_name"]
+            plt.figure(figsize=(8, 7))
             ax=plt.axes()
-            sns.heatmap(measurement.get_data(), cmap="icefire", ax=ax, vmax=self.max)
+            sns.heatmap(measurement.get_data(), cmap="icefire", ax=ax, vmax=self.max, cbar_kws={'label': 'Fluorescence'} )
             #sns.heatmap(df, cmap="icefire",  ax=ax, vmax=1000)
             ax.set_title(f'Measurement {timestamp}')
             # Adjust the x and y ticks to make them less dense
@@ -30,18 +31,24 @@ class WellTimeSeriesPlotter:
             ax.set_yticks(ax.get_yticks()[::5])  
             heatmap_path = f'{well_name}/file_{timestamp}'
             self.plotted_heatmaps.append(heatmap_path)
-            plt.savefig(heatmap_path,dpi=400)
+            plt.xlabel("Emission Wavelength (nm)") 
+            plt.ylabel("Excitation Wavelength (nm)") 
+            plt.savefig(heatmap_path,dpi=500)
             plt.close()
 
     def plot_max(self) -> None:
         well_name = self.config_data["well_name"]
-        sns.lineplot(data = self._well_time_series.get_max_table())
+        sns.regplot(data = self._well_time_series.get_max_table(), x = 'timepoint', y = 'max')
+        plt.xlabel("Time (hours)") 
+        plt.ylabel("Maximum Fluorescence") 
         plt.savefig(f'max_table{well_name}',dpi=400)
         plt.close()
 
     def plot_euclidean_heatmap(self) -> None:
         well_name = self.config_data["well_name"]
-        sns.heatmap(np.log(self._euclidean_distances_over_timeseries), cmap="icefire", vmin=1)
+        sns.heatmap(np.log(self._euclidean_distances_over_timeseries), cmap="icefire", vmin=1, cbar_kws={'label': 'log (Euclidean Distance)'} )
+        plt.xlabel("Measurement no") 
+        plt.ylabel("Measurement no") 
         plt.savefig(f'euclidean_distance_over_time_{well_name}',dpi=400)
         plt.close()
 
@@ -112,8 +119,10 @@ class WellTimeSeries:
         max_fl_table = pd.DataFrame()
         for timestamp, measurement in self.readings.items():
             max_value = float(measurement.get_data_max())
-            max_fl_table = pd.concat([max_fl_table, pd.DataFrame([max_value], index=[timestamp])])
+            max_fl_table = pd.concat([max_fl_table, pd.DataFrame([{'max' : max_value, 'timepoint':timestamp*30}], index=[timestamp*30])])
+        print (max_fl_table)
         return max_fl_table
+        
 
     def euclidean_distance_between_timepoints(self) -> pd.DataFrame:
         distances_table = pd.DataFrame()
