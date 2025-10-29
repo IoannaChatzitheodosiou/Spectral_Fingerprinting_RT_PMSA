@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 from PIL import Image
+from scipy.optimize import curve_fit
+import sys
 
 class WellTimeSeriesPlotter:
     def __init__(self, well_time_series: WellTimeSeries) -> None:
@@ -38,7 +40,51 @@ class WellTimeSeriesPlotter:
 
     def plot_max(self) -> None:
         well_name = self.config_data["well_name"]
-        sns.regplot(data = self._well_time_series.get_max_table(), x = 'timepoint', y = 'max')
+        data = self._well_time_series.get_max_table()
+        
+        # Define sigmoid function
+        def sigmoid(x, L, k, x0, b):
+            return L / (1 + np.exp(-k * (x - x0))) + b
+        
+        # Extract x and y data
+        x_data = data['timepoint'].values
+        y_data = data['max'].values
+        
+        # Sort data by timepoint to ensure proper ordering
+        sorted_indices = np.argsort(x_data)
+        x_data = x_data[sorted_indices]
+        y_data = y_data[sorted_indices]
+        
+        # Check if first point is the max and remove it if so
+        if len(y_data) > 1 and y_data[0] == np.max(y_data):
+            print(f"Removing first point as it's the highest value: ({x_data[0]}, {y_data[0]})")
+            x_data = x_data[1:]
+            y_data = y_data[1:]
+        
+        # Fit sigmoid curve
+        try:
+            # Initial parameter guesses
+            L_guess = np.max(y_data) - np.min(y_data)  # Maximum - minimum
+            k_guess = 1  # Growth rate
+            x0_guess = np.median(x_data)  # Midpoint
+            b_guess = np.min(y_data)  # Minimum value
+            
+            popt, _ = curve_fit(sigmoid, x_data, y_data, 
+                              p0=[L_guess, k_guess, x0_guess, b_guess],
+                              maxfev=10000)
+            
+            # Generate smooth curve for plotting
+            x_smooth = np.linspace(x_data.min(), x_data.max(), 100)
+            y_smooth = sigmoid(x_smooth, *popt)
+            
+            # Plot data points and fitted curve
+            plt.scatter(x_data, y_data, alpha=0.7)
+            plt.plot(x_smooth, y_smooth, 'r-')            
+        except Exception as e:
+            print(f"Sigmoid fitting failed: {e}")
+            # Fallback to scatter plot only
+            plt.scatter(x_data, y_data, alpha=0.7)
+        
         plt.xlabel("Time (hours)") 
         plt.ylabel("Maximum Fluorescence") 
         plt.savefig(f'max_table{well_name}',dpi=400)
@@ -119,7 +165,7 @@ class WellTimeSeries:
         max_fl_table = pd.DataFrame()
         for timestamp, measurement in self.readings.items():
             max_value = float(measurement.get_data_max())
-            max_fl_table = pd.concat([max_fl_table, pd.DataFrame([{'max' : max_value, 'timepoint':timestamp*30}], index=[timestamp*30])])
+            max_fl_table = pd.concat([max_fl_table, pd.DataFrame([{'max' : max_value, 'timepoint':timestamp*3}], index=[timestamp*3])])
         print (max_fl_table)
         return max_fl_table
         
@@ -180,3 +226,5 @@ if __name__ == "__main__":
         well = WellTimeSeries(f'./{well}')
         # well.plot_heatmaps()
         well.make_gif()
+
+        
